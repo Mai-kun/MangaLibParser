@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/Tests/" />
+  <Project Path="MangaLibParser.Application/MangaLibParser.Application.csproj" />
+  <Project Path="MangaLibParser.Domain/MangaLibParser.Domain.csproj" />
+  <Project Path="MangaLibParser.Infrastructure/MangaLibParser.Infrastructure.csproj" />
+  <Project Path="MangaLibParser.Web/MangaLibParser.Web.csproj" />
+</Solution>
