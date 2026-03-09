@@ -12,6 +12,7 @@ public static class MangaEndpoints
                            .WithTags("Manga");
 
         group.MapPost("/parse", ParseMangaHandler);
+        group.MapPost("/sync-library", SyncLibraryHandler);
     }
 
     private static async Task<IResult> ParseMangaHandler(
@@ -34,6 +35,25 @@ public static class MangaEndpoints
             // TODO Логирование
             return Results.Problem($"Ошибка при парсинге: {e.Message}");
         }
+    }
 
+    private static async Task<IResult> SyncLibraryHandler(
+        [FromBody] ParseMangaRequest request,
+        IUserLibrarySyncService syncService)
+    {
+        if (string.IsNullOrEmpty(request.Url))
+        {
+            return Results.BadRequest("URL профиля не может быть пустым");
+        }
+
+        try
+        {
+            var library = await syncService.SyncLibraryAsync(request.Url, request.Options);
+            return Results.Ok(library);
+        }
+        catch (Exception e)
+        {
+            return Results.Problem("Ошибка при синхронизации библиотеки");
+        }
     }
 }
