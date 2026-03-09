@@ -19,14 +19,9 @@ public static class UserEndpoints
         IUserListParserService parser)
     {
         // TODO Вынеси в глобальное перехватывание ошибок
-        if (request.UserId == 0)
-        {
-            return Results.BadRequest("Id пользователя должно быть указано");
-        }
-
         try
         {
-            var result = await parser.ParseUserListAsync(request.UserId, request.ListType);
+            var result = await parser.ParseUserListAsync(request.Url);
             return Results.Ok(result);
         }
         catch (Exception e)

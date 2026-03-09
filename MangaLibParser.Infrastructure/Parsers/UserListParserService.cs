@@ -2,29 +2,34 @@
 using MangaLibParser.Application.Abstractions;
 using MangaLibParser.Domain.Entities;
 using Microsoft.Playwright;
+using Serilog;
+using SerilogTracing;
 
 namespace MangaLibParser.Infrastructure.Parsers;
 
 public class UserListParserService : IUserListParserService
 {
     private readonly PlaywrightBrowserManager _browserManager;
+    private readonly ILogger _logger;
     private IPage _page;
 
-    public UserListParserService(PlaywrightBrowserManager browserManager)
+    public UserListParserService(PlaywrightBrowserManager browserManager, ILogger logger)
     {
         _browserManager = browserManager;
+        _logger = logger;
     }
 
-    public async Task<List<UserMangaItem>> ParseUserListAsync(long userId, long listType)
+    public async Task<List<UserMangaItem>> ParseUserListAsync(string userProfileUrl)
     {
         _page = await _browserManager.GetNewPageAsync();
 
-        var url = $"https://mangalib.me/ru/user/{userId}?page=1&sort_by=updated_at&sort_type=desc&status={listType}";
-        await _page.GotoAsync(url);
+        using var activity = _logger.StartActivity("Парсинг списка пользователя {UserProfileUrl}", userProfileUrl);
+
+        await _page.GotoAsync(userProfileUrl);
         await AutoScrollAsync();
 
         var rawResult = await _page.EvaluateAsync<JsonElement>(@"() => {
-            const container = document.querySelector('div[data-view=""list""]');
+            const container = document.querySelector('.book-list');
             if (!container) return [];
 
             const cards = container.querySelectorAll('[data-media-id]');
@@ -41,6 +46,8 @@ public class UserListParserService : IUserListParserService
         }");
 
         var result = JsonSerializer.Deserialize<List<UserMangaItem>>(rawResult.GetRawText());
+
+        activity.Complete();
         return result ?? [];
     }
 

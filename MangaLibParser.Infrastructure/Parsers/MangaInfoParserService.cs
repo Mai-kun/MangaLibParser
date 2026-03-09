@@ -4,31 +4,38 @@ using MangaLibParser.Application.Abstractions;
 using MangaLibParser.Application.Options;
 using MangaLibParser.Domain.Entities;
 using Microsoft.Playwright;
+using Serilog;
+using Serilog.Events;
+using SerilogTracing;
 
 namespace MangaLibParser.Infrastructure.Parsers;
 
 public class MangaInfoParserService : IMangaInfoParserService
 {
     private readonly PlaywrightBrowserManager _browserManager;
+    private readonly ILogger _logger;
 
-    public MangaInfoParserService(PlaywrightBrowserManager browserManager)
+    public MangaInfoParserService(PlaywrightBrowserManager browserManager, ILogger logger)
     {
         _browserManager = browserManager;
+        _logger = logger;
     }
 
-    public async Task<Manga> ParseMangaAsync(string url, MangaParsingOptions options)
+    public async Task<Manga?> ParseMangaAsync(string mangaUrl, MangaParsingOptions options)
     {
-        ArgumentException.ThrowIfNullOrEmpty(url);
+        ArgumentException.ThrowIfNullOrEmpty(mangaUrl);
+
+        using var activity = _logger.StartActivity("Парсинг манги {MangaUrl}", mangaUrl);
 
         var page = await _browserManager.GetNewPageAsync();
         try
         {
-            await page.GotoAsync(url);
+            await page.GotoAsync(mangaUrl);
 
             var manga = new Manga
             {
                 Url = options.ParseUrl
-                    ? url
+                    ? mangaUrl
                     : null,
 
                 TitleTranslated = options.ParseTitleTranslated
@@ -44,7 +51,7 @@ public class MangaInfoParserService : IMangaInfoParserService
                     : null,
 
                 AgeRating = options.ParseAgeRating
-                    ? await GetContentBySelectorAsync<int>("a[data-type='restriction']", page)
+                    ? await GetContentBySelectorAsync<int>("a[data-type='restriction']", page, @"\d+")
                     : null,
 
                 Cover = options.ParseCover
@@ -64,16 +71,16 @@ public class MangaInfoParserService : IMangaInfoParserService
                     : null,
 
                 GeneralRating = options.ParseGeneralRating
-                    ? await GetContentBySelectorAsync<float>(".rating-info__value", page)
+                    ? await GetContentBySelectorAsync<float>(".rating-info__value", page, @"[\d\.]+")
                     : null,
 
                 ChaptersAmount = options.ParseChaptersAmount
                     ? await GetContentBySelectorAsync<int>("div:text-is('Глав') + div span", page, @"\d+")
                     : null,
 
-                UserRating = options.ParseUserRating
-                    ? await GetContentBySelectorAsync<int>(".rating-info__value", page)
-                    : null,
+                // UserRating is not directly parseable from the main page as it's often dynamic or requires user context.
+                // Setting it to null as per current design.
+                UserRating = null,
 
                 ReleaseStatus = options.ParseReleaseStatus
                     ? await GetContentBySelectorAsync<string>("a:has-text('Статус') span", page)
@@ -100,7 +107,13 @@ public class MangaInfoParserService : IMangaInfoParserService
                     : [],
             };
 
+            activity.Complete();
             return manga;
+        }
+        catch (Exception e)
+        {
+            activity.Complete(LogEventLevel.Error, e);
+            return null;
         }
         finally
         {
@@ -108,58 +121,106 @@ public class MangaInfoParserService : IMangaInfoParserService
         }
     }
 
-    private static async Task<string?> GetTitleContentAsync(int level, IPage page)
+    private async Task<string?> GetTitleContentAsync(int level, IPage page)
     {
+        using var activity = _logger.StartActivity("Получение заголовка уровня {Level}", level);
+
         var headingLocator = page.GetByRole(AriaRole.Heading, new PageGetByRoleOptions { Level = level }).First;
         var headingContent = await headingLocator.TextContentAsync();
+
+        activity.Complete();
         return headingContent;
     }
 
-    private static async Task<T?> GetContentBySelectorAsync<T>(string selector, IPage page, string? regexPattern = null)
+    private async Task<T?> GetContentBySelectorAsync<T>(string selector, IPage page, string? regexPattern = null)
     {
-        var locator = page.Locator(selector);
-        return await ExtractContentAsync<T>(locator, regexPattern);
-    }
-
-    private static async Task<T?> ExtractContentAsync<T>(ILocator locator, string? regexPattern = null)
-    {
-        var locatorContent = await locator.First.TextContentAsync();
-        var cleanContent = locatorContent?.Trim();
-
-        if (string.IsNullOrEmpty(cleanContent))
+        try
         {
+            var locator = page.Locator(selector);
+            return await ExtractContentAsync<T>(locator, selector, regexPattern);
+        }
+        catch (TimeoutException e)
+        {
+            _logger.Warning(e, "Timeout while trying to locate element with selector '{Selector}'", selector);
             return default;
         }
+    }
 
-        if (!string.IsNullOrEmpty(regexPattern))
-        {
-            var match = Regex.Match(cleanContent, regexPattern);
-            if (match.Success)
-            {
-                cleanContent = match.Value;
-            }
-            else
-            {
-                return default;
-            }
-        }
+    private async Task<T?> ExtractContentAsync<T>(ILocator locator, string selector, string? regexPattern = null)
+    {
+        using var activity = _logger.StartActivity("Получение селектора {Selector}", selector);
 
         try
         {
+            var locatorContent =
+                await locator.First.TextContentAsync(new LocatorTextContentOptions { Timeout = 5000 });
+            var cleanContent = locatorContent?.Trim();
+
+            if (string.IsNullOrEmpty(cleanContent))
+            {
+                _logger.Debug("No content found for selector '{Selector}' or content was empty/whitespace.", selector);
+                return default;
+            }
+
+            if (!string.IsNullOrEmpty(regexPattern))
+            {
+                var match = Regex.Match(cleanContent, regexPattern);
+                if (match.Success)
+                {
+                    cleanContent = match.Value;
+                    _logger.Debug("Content for selector '{Selector}' matched regex '{RegexPattern}': {CleanContent}",
+                        selector, regexPattern, cleanContent);
+                }
+                else
+                {
+                    _logger.Warning(
+                        "Content '{Content}' for selector '{Selector}' did not match regex '{RegexPattern}'.",
+                        cleanContent, selector, regexPattern);
+                    return default;
+                }
+            }
+
             var converter = TypeDescriptor.GetConverter(typeof(T));
-            return (T?)converter.ConvertFromString(cleanContent);
+            var convertedValue = (T?)converter.ConvertFromString(cleanContent);
+
+            _logger.Debug("Successfully converted content '{CleanContent}' to type {Type} for selector '{Selector}'.",
+                cleanContent, typeof(T).Name, selector);
+
+            activity.Complete();
+            return convertedValue;
         }
-        catch
+        catch (Exception e)
         {
+            _logger.Error(e, "Failed to extract or convert content for {Selector}", selector);
+            activity.Complete(LogEventLevel.Error, e);
             return default;
         }
     }
 
-    private static async Task<List<string>> GetListContentAsync(string selector, IPage page)
+    private async Task<List<string>> GetListContentAsync(string selector, IPage page)
     {
-        var locators = await page.Locator(selector).AllTextContentsAsync();
-        return locators.Any()
-            ? locators.Select(s => s.Trim()).ToList()
-            : [];
+        using var activity = _logger.StartActivity("Получение списка {Selector}", selector);
+
+        try
+        {
+            var locators = await page.Locator(selector).AllTextContentsAsync();
+            if (locators.Any())
+            {
+                var trimmedLocators = locators.Select(s => s.Trim()).ToList();
+                _logger.Debug("Extracted list content for selector '{Selector}': {Content}", selector, trimmedLocators);
+
+                activity.Complete();
+                return trimmedLocators;
+            }
+
+            _logger.Debug("No list content found for selector '{Selector}'.", selector);
+            activity.Complete();
+            return [];
+        }
+        catch (Exception e)
+        {
+            activity.Complete(LogEventLevel.Error, e);
+            return [];
+        }
     }
 }

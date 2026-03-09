@@ -74,7 +74,7 @@ public class PlaywrightBrowserManager : IAsyncDisposable
             _context = await _playwright.Chromium.LaunchPersistentContextAsync(userDataDir,
                 new BrowserTypeLaunchPersistentContextOptions
                 {
-                    Headless = true,
+                    Headless = false,
                     Channel = "msedge",
                     IgnoreDefaultArgs = ["--enable-automation"],
                 });
