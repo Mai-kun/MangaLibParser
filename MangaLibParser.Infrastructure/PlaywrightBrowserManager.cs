@@ -67,16 +67,15 @@ public class PlaywrightBrowserManager : IAsyncDisposable
                 return;
             }
 
-            // TODO: Вынести этот путь в appsettings.json
-            const string userDataDir = @"C:\Users\googl\AppData\Local\Microsoft\Edge\User Data";
+            var userDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "MangaLibParserProfile");
 
             _playwright = await Playwright.CreateAsync();
-            var context = await _playwright.Chromium.LaunchPersistentContextAsync(userDataDir,
+            _context = await _playwright.Chromium.LaunchPersistentContextAsync(userDataDir,
                 new BrowserTypeLaunchPersistentContextOptions
                 {
                     Headless = true,
                     Channel = "msedge",
-                    Args = ["--profile-directory=Default"],
                     IgnoreDefaultArgs = ["--enable-automation"],
                 });
         }
