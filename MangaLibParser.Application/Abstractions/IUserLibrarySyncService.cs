@@ -5,5 +5,6 @@ namespace MangaLibParser.Application.Abstractions;
 
 public interface IUserLibrarySyncService
 {
-    public Task<List<Manga>> SyncLibraryAsync(string userProfileUrl, MangaParsingOptions options);
+    public Task<byte[]> ExportLibraryToZipAsync(string userProfileUrl, MangaParsingOptions options);
+    public Task<List<Manga>> ParseLibraryAsync(string userProfileUrl, MangaParsingOptions options);
 }

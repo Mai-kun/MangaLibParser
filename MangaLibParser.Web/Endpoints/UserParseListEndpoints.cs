@@ -11,23 +11,51 @@ public static class UserEndpoints
         var group = builder.MapGroup("api/users")
                            .WithTags("User");
 
-        group.MapPost("/parse", ParseUserListHandler);
+        group.MapPost("/parse-library", ParseLibraryHandler);
+        group.MapPost("/parse-library/download", DownloadLibraryHandler);
     }
 
-    private static async Task<IResult> ParseUserListHandler(
-        [FromBody] ParseUserListRequest request,
-        IUserListParserService parser)
+    private static async Task<IResult> ParseLibraryHandler(
+        [FromBody] ParseMangaRequest request,
+        IUserLibrarySyncService syncService)
     {
-        // TODO Вынеси в глобальное перехватывание ошибок
+        if (string.IsNullOrEmpty(request.Url))
+        {
+            return Results.BadRequest("URL профиля не может быть пустым");
+        }
+
         try
         {
-            var result = await parser.ParseUserListAsync(request.Url);
-            return Results.Ok(result);
+            var library = await syncService.ParseLibraryAsync(request.Url, request.Options);
+            return Results.Ok(library);
         }
         catch (Exception e)
         {
-            // TODO Логирование
-            return Results.Problem($"Ошибка при парсинге: {e.Message}");
+            return Results.Problem("Ошибка при синхронизации библиотеки");
+        }
+    }
+
+    private static async Task<IResult> DownloadLibraryHandler([FromBody] ParseMangaRequest request,
+        IUserLibrarySyncService syncService)
+    {
+        if (string.IsNullOrEmpty(request.Url))
+        {
+            return Results.BadRequest("URL профиля не может быть пустым");
+        }
+
+        try
+        {
+            var zipFile = await syncService.ExportLibraryToZipAsync(request.Url, request.Options);
+
+            return Results.File(
+                zipFile,
+                "application/zip",
+                "library.zip"
+            );
+        }
+        catch (Exception e)
+        {
+            return Results.Problem("Ошибка при создании архива библиотеки");
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using MangaLibParser.Application.Abstractions;
+﻿using System.Text;
+using MangaLibParser.Application.Abstractions;
 using MangaLibParser.Application.DTOs;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,7 +13,7 @@ public static class MangaEndpoints
                            .WithTags("Manga");
 
         group.MapPost("/parse", ParseMangaHandler);
-        group.MapPost("/sync-library", SyncLibraryHandler);
+        group.MapPost("/download/md", DownloadMarkdownHandler);
     }
 
     private static async Task<IResult> ParseMangaHandler(
@@ -37,23 +38,26 @@ public static class MangaEndpoints
         }
     }
 
-    private static async Task<IResult> SyncLibraryHandler(
-        [FromBody] ParseMangaRequest request,
-        IUserLibrarySyncService syncService)
+    private static async Task<IResult> DownloadMarkdownHandler([FromBody] ParseMangaRequest request,
+        IMangaInfoParserService parserService,
+        IMarkdownCreatorService markdownCreator)
     {
-        if (string.IsNullOrEmpty(request.Url))
+        var manga = await parserService.ParseMangaAsync(request.Url, request.Options);
+
+        if (manga == null)
         {
-            return Results.BadRequest("URL профиля не может быть пустым");
+            return Results.BadRequest("Не удалось получить данные о манге.");
         }
 
-        try
-        {
-            var library = await syncService.SyncLibraryAsync(request.Url, request.Options);
-            return Results.Ok(library);
-        }
-        catch (Exception e)
-        {
-            return Results.Problem("Ошибка при синхронизации библиотеки");
-        }
+        var mdText = await markdownCreator.CreateMarkdown(manga, request.Options);
+        var fileBytes = Encoding.UTF8.GetBytes(mdText);
+        var rawName = manga.TitleTranslated ?? "manga";
+        var safeName = string.Join("_", rawName.Split(Path.GetInvalidFileNameChars())) + ".md";
+
+        return Results.File(
+            fileBytes,
+            "text/markdown",
+            safeName
+        );
     }
 }

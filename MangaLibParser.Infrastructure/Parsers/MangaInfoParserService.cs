@@ -14,11 +14,14 @@ public class MangaInfoParserService : IMangaInfoParserService
 {
     private readonly PlaywrightBrowserManager _browserManager;
     private readonly ILogger _logger;
+    private readonly IMarkdownPlanner _markdownPlanner;
 
-    public MangaInfoParserService(PlaywrightBrowserManager browserManager, ILogger logger)
+    public MangaInfoParserService(PlaywrightBrowserManager browserManager, ILogger logger,
+        IMarkdownPlanner markdownPlanner)
     {
         _browserManager = browserManager;
         _logger = logger;
+        _markdownPlanner = markdownPlanner;
     }
 
     public async Task<Manga?> ParseMangaAsync(string mangaUrl, MangaParsingOptions options)
@@ -153,7 +156,7 @@ public class MangaInfoParserService : IMangaInfoParserService
         try
         {
             var locatorContent =
-                await locator.First.TextContentAsync(new LocatorTextContentOptions { Timeout = 5000 });
+                await locator.First.TextContentAsync(new LocatorTextContentOptions { Timeout = 2000 });
             var cleanContent = locatorContent?.Trim();
 
             if (string.IsNullOrEmpty(cleanContent))

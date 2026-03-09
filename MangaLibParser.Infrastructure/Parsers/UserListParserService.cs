@@ -48,6 +48,7 @@ public class UserListParserService : IUserListParserService
         var result = JsonSerializer.Deserialize<List<UserMangaItem>>(rawResult.GetRawText());
 
         activity.Complete();
+        await _page.CloseAsync();
         return result ?? [];
     }
 

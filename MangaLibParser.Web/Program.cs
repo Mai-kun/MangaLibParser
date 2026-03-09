@@ -13,16 +13,18 @@ Log.Logger = new LoggerConfiguration()
              .MinimumLevel.Debug()
              .WriteTo.Seq("http://localhost:5341")
              .Enrich.FromLogContext()
+             .Enrich.WithProperty("WebApi", "MangaLibParser")
              .CreateLogger();
 using var listener = new ActivityListenerConfiguration().TraceToSharedLogger();
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddSingleton<PlaywrightBrowserManager>();
-builder.Services.AddScoped<IMangaInfoParserService, MangaInfoParserService>();
 builder.Services.AddScoped<IUserListParserService, UserListParserService>();
+builder.Services.AddScoped<IMangaInfoParserService, MangaInfoParserService>();
 builder.Services.AddScoped<IUserLibrarySyncService, UserLibrarySyncService>();
+builder.Services.AddScoped<IMarkdownCreatorService, MarkdownCreatorService>();
+
+builder.Services.AddSingleton<IMarkdownPlanner, MarkdownPlanner>();
 builder.Services.AddSingleton(Log.Logger);
 
 var app = builder.Build();
