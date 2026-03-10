@@ -51,13 +51,12 @@ public static class MangaEndpoints
 
         var mdText = await markdownCreator.CreateMarkdown(manga, request.Options);
         var fileBytes = Encoding.UTF8.GetBytes(mdText);
-        var rawName = manga.TitleTranslated ?? "manga";
-        var safeName = string.Join("_", rawName.Split(Path.GetInvalidFileNameChars())) + ".md";
+        var name = $"{manga.TitleTranslated ?? Guid.NewGuid().ToString()}.md";
 
         return Results.File(
             fileBytes,
             "text/markdown",
-            safeName
+            name
         );
     }
 }

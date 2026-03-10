@@ -1,4 +1,5 @@
 ﻿using System.IO.Compression;
+using System.Web;
 using MangaLibParser.Application.Abstractions;
 using MangaLibParser.Application.Options;
 using MangaLibParser.Domain.Entities;
@@ -65,12 +66,29 @@ public class UserLibrarySyncService : IUserLibrarySyncService
 
         var userMangasList = await _userListParserService.ParseUserListAsync(userProfileUrl);
 
+        var uri = new Uri(userProfileUrl);
+        var query = HttpUtility.ParseQueryString(uri.Query);
+        var status = query["status"];
+
         var resultList = new List<Manga>();
         foreach (var mangaItem in userMangasList)
         {
+            if (mangaItem.Url is null)
+            {
+                continue;
+            }
+
             try
             {
                 var manga = await _mangaInfoParserService.ParseMangaAsync(mangaItem.Url, options);
+                if (manga is null)
+                {
+                    _logger.Error("Ошибка при парсинге манги {MangaUrl}", mangaItem.Url);
+                    continue;
+                }
+
+                manga.UserRating = mangaItem.UserRating;
+                manga.ReadingStatus = status;
                 resultList.Add(manga);
 
                 await Task.Delay(_random.Next(2000, 5000));

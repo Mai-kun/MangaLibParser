@@ -12,14 +12,12 @@ public class MangaInfoParserService : IMangaInfoParserService
     private readonly PlaywrightBrowserManager _browserManager;
     private readonly ILogger _logger;
     private readonly IMangaParsingPlanner _mangaParsingPlanner;
-    private readonly IMarkdownPlanner _markdownPlanner;
 
     public MangaInfoParserService(PlaywrightBrowserManager browserManager, ILogger logger,
-        IMarkdownPlanner markdownPlanner, IMangaParsingPlanner mangaParsingPlanner)
+        IMangaParsingPlanner mangaParsingPlanner)
     {
         _browserManager = browserManager;
         _logger = logger;
-        _markdownPlanner = markdownPlanner;
         _mangaParsingPlanner = mangaParsingPlanner;
     }
 

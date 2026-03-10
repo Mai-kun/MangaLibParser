@@ -106,7 +106,8 @@ public class MangaParsingPlanner : IMangaParsingPlanner
 
         if (options.ParseTags)
         {
-            steps.Add(async (page, _, manga) => manga.Tags = await GetListContentAsync("a[data-type='tag']", page));
+            steps.Add(async (page, _, manga) =>
+                manga.Tags = await GetListContentAsync("a[data-type='tag']", page));
         }
 
         if (options.ParsePublishers)
@@ -206,6 +207,12 @@ public class MangaParsingPlanner : IMangaParsingPlanner
 
         try
         {
+            await page.Locator(selector).First.WaitForAsync(new LocatorWaitForOptions
+            {
+                State = WaitForSelectorState.Attached,
+                Timeout = 2000,
+            });
+
             var locators = await page.Locator(selector).AllTextContentsAsync();
             if (locators.Any())
             {

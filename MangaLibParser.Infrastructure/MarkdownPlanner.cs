@@ -1,7 +1,6 @@
 ﻿using System.Text;
 using MangaLibParser.Application.Abstractions;
 using MangaLibParser.Application.Options;
-using MangaLibParser.Application.Services;
 using MangaLibParser.Domain.Entities;
 
 namespace MangaLibParser.Infrastructure;
@@ -81,27 +80,62 @@ public class MarkdownPlanner : IMarkdownPlanner
 
         if (options.ParseGenres)
         {
-            actions.Add((sb, m) => sb.AppendLine($"book-genres: {string.Join(", ", m.Genres)}"));
+            actions.Add((sb, m) =>
+            {
+                sb.AppendLine("book-genres:");
+                foreach (var genre in m.Genres)
+                {
+                    sb.AppendLine($" - {genre}");
+                }
+            });
         }
 
         if (options.ParseTags)
         {
-            actions.Add((sb, m) => sb.AppendLine($"book-tags: {string.Join(", ", m.Tags)}"));
+            actions.Add((sb, m) =>
+            {
+                sb.AppendLine("book-tags:");
+                foreach (var tag in m.Tags)
+                {
+                    sb.AppendLine($" - {tag}");
+                }
+            });
         }
 
         if (options.ParseAuthors)
         {
-            actions.Add((sb, m) => sb.AppendLine($"book-authors: {string.Join(", ", m.Authors)}"));
+            actions.Add((sb, m) =>
+            {
+                sb.AppendLine("book-authors:");
+                foreach (var author in m.Authors)
+                {
+                    sb.AppendLine($" - {author}");
+                }
+            });
         }
 
         if (options.ParsePublishers)
         {
-            actions.Add((sb, m) => sb.AppendLine($"book-publishers: {string.Join(", ", m.Publishers)}"));
+            actions.Add((sb, m) =>
+            {
+                sb.AppendLine("book-publishers:");
+                foreach (var publisher in m.Publishers)
+                {
+                    sb.AppendLine($" - {publisher}");
+                }
+            });
         }
 
         if (options.ParseTranslators)
         {
-            actions.Add((sb, m) => sb.AppendLine($"book-translators: {string.Join(", ", m.Translators)}"));
+            actions.Add((sb, m) =>
+            {
+                sb.AppendLine("book-translators:");
+                foreach (var translator in m.Translators)
+                {
+                    sb.AppendLine($" - {translator}");
+                }
+            });
         }
 
         AppendDelimiter(actions);
