@@ -9,7 +9,7 @@ public interface IMangaInfoParserService
     ///     Parses manga information from the given URL.
     /// </summary>
     /// <param name="mangaUrl">The URL of the manga page.</param>
-    /// <param name="options">The options for parsing the manga information.</param>
+    /// <param name="options"></param>
     /// <returns>A <see cref="Manga" /> object containing the parsed information.</returns>
     public Task<Manga?> ParseMangaAsync(string mangaUrl, MangaParsingOptions options);
 }

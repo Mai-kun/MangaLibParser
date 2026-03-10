@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using MangaLibParser.Domain.Entities;
 
-namespace MangaLibParser.Application.Services;
+namespace MangaLibParser.Application.Options;
 
 public class MangaMarkdownPlan
 {

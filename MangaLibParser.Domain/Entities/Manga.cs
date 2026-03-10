@@ -5,7 +5,7 @@ public class Manga
     /// <summary>
     ///     The URL of the manga.
     /// </summary>
-    public string? Url { get; init; }
+    public string? Url { get; set; }
 
     /// <summary>
     ///     The translated title of the manga.

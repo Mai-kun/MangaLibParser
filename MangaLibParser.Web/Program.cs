@@ -25,6 +25,7 @@ builder.Services.AddScoped<IUserLibrarySyncService, UserLibrarySyncService>();
 builder.Services.AddScoped<IMarkdownCreatorService, MarkdownCreatorService>();
 
 builder.Services.AddSingleton<IMarkdownPlanner, MarkdownPlanner>();
+builder.Services.AddSingleton<IMangaParsingPlanner, MangaParsingPlanner>();
 builder.Services.AddSingleton(Log.Logger);
 
 var app = builder.Build();
