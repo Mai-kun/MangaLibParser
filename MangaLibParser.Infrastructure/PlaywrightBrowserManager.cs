@@ -80,7 +80,6 @@ public class PlaywrightBrowserManager : IAsyncDisposable
                     Args =
                     [
                         "--disable-blink-features=AutomationControlled",
-                        "--no-sandbox",
                         "--disable-infobars",
                     ],
                     UserAgent =
