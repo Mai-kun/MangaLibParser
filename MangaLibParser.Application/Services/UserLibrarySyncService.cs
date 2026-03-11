@@ -1,4 +1,5 @@
 ﻿using System.IO.Compression;
+using System.Text;
 using System.Web;
 using MangaLibParser.Application.Abstractions;
 using MangaLibParser.Application.Options;
@@ -27,30 +28,37 @@ public class UserLibrarySyncService : IUserLibrarySyncService
 
     public async Task<byte[]> ExportLibraryToZipAsync(string userProfileUrl, MangaParsingOptions options)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userProfileUrl);
         var plan = _planner.CreatePlan(options);
-        var mangaList = await _userListParserService.ParseUserListAsync(userProfileUrl);
+
+        var userMangasList = await _userListParserService.ParseUserListAsync(userProfileUrl);
+        var status = GetStatusFromUrl(userProfileUrl);
 
         using var memoryStream = new MemoryStream();
         await using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
         {
-            foreach (var manga in mangaList)
+            foreach (var mangaItem in userMangasList)
             {
-                var mangaInfo = await _mangaInfoParserService.ParseMangaAsync(manga.Url, options);
-                if (mangaInfo is null)
+                try
                 {
-                    continue;
+                    var manga = await GetFullMangaInfo(options, mangaItem, status);
+
+                    var content = plan.Execute(manga);
+                    var baseName = manga.TitleTranslated ?? manga.TitleOriginal ?? Guid.NewGuid().ToString();
+                    var fileName = $"{GetSafeFileName(baseName)}.md";
+                    var entry = archive.CreateEntry(fileName);
+                    await using (var entryStream = await entry.OpenAsync())
+                    await using (var writer = new StreamWriter(entryStream, Encoding.UTF8))
+                    {
+                        await writer.WriteAsync(content);
+                    }
+
+                    await Task.Delay(_random.Next(1500, 3000));
                 }
-
-                var content = plan.Execute(mangaInfo);
-
-                var fileName = $"{mangaInfo.TitleTranslated ?? mangaInfo.TitleOriginal ?? $"{Guid.NewGuid()}"}.md";
-                var entry = archive.CreateEntry(fileName);
-
-                await using var entryStream = await entry.OpenAsync();
-                await using var writer = new StreamWriter(entryStream);
-                await writer.WriteAsync(content);
-
-                await Task.Delay(_random.Next(2000, 5000));
+                catch (Exception e)
+                {
+                    _logger.Warning(e, "Пропущен экспорт манги {Url}", mangaItem.Url);
+                }
             }
         }
 
@@ -65,30 +73,14 @@ public class UserLibrarySyncService : IUserLibrarySyncService
             _logger.StartActivity("Синхронизация библиотеки пользователя {UserProfileUrl}", userProfileUrl);
 
         var userMangasList = await _userListParserService.ParseUserListAsync(userProfileUrl);
-
-        var uri = new Uri(userProfileUrl);
-        var query = HttpUtility.ParseQueryString(uri.Query);
-        var status = query["status"];
+        var status = GetStatusFromUrl(userProfileUrl);
 
         var resultList = new List<Manga>();
         foreach (var mangaItem in userMangasList)
         {
-            if (mangaItem.Url is null)
-            {
-                continue;
-            }
-
             try
             {
-                var manga = await _mangaInfoParserService.ParseMangaAsync(mangaItem.Url, options);
-                if (manga is null)
-                {
-                    _logger.Error("Ошибка при парсинге манги {MangaUrl}", mangaItem.Url);
-                    continue;
-                }
-
-                manga.UserRating = mangaItem.UserRating;
-                manga.ReadingStatus = status;
+                var manga = await GetFullMangaInfo(options, mangaItem, status);
                 resultList.Add(manga);
 
                 await Task.Delay(_random.Next(2000, 5000));
@@ -101,5 +93,53 @@ public class UserLibrarySyncService : IUserLibrarySyncService
 
         activity.Complete();
         return resultList;
+    }
+
+    private static string? GetStatusFromUrl(string userProfileUrl)
+    {
+        try
+        {
+            var uri = new Uri(userProfileUrl);
+            var query = HttpUtility.ParseQueryString(uri.Query);
+            var status = query["status"];
+            return status;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private async Task<Manga> GetFullMangaInfo(MangaParsingOptions options, UserMangaItem mangaItem, string? status)
+    {
+        var mangaResult = new Manga { Url = mangaItem.Url };
+
+        if (string.IsNullOrEmpty(mangaItem.Url))
+        {
+            _logger.Warning("В списке встречен пустой URL манги");
+            return mangaResult;
+        }
+
+        var detailedManga = await _mangaInfoParserService.ParseMangaAsync(mangaItem.Url, options);
+        if (detailedManga != null)
+        {
+            mangaResult = detailedManga;
+        }
+
+        mangaResult.UserRating = mangaItem.UserRating;
+        mangaResult.ReadingStatus = status;
+
+        return mangaResult;
+    }
+
+    private static string GetSafeFileName(string name)
+    {
+        if (name.Length > 150)
+        {
+            name = name[..150];
+        }
+
+        return Path.GetInvalidFileNameChars()
+                   .Aggregate(name, (current, c) => current.Replace(c, '_'));
     }
 }

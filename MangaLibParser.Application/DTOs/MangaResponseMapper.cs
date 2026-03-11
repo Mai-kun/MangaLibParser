@@ -1,7 +1,7 @@
 ﻿using MangaLibParser.Application.Options;
 using MangaLibParser.Domain.Entities;
 
-namespace MangaLibParser.Web.Endpoints;
+namespace MangaLibParser.Application.DTOs;
 
 public static class MangaResponseMapper
 {

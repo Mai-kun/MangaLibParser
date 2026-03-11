@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using MangaLibParser.Application.Abstractions;
 using MangaLibParser.Application.DTOs;
+using MangaLibParser.Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MangaLibParser.Web.Endpoints;
@@ -20,28 +21,15 @@ public static class MangaEndpoints
         [FromBody] ParseMangaRequest request,
         IMangaInfoParserService parser)
     {
-        if (string.IsNullOrEmpty(request.Url))
-        {
-            return Results.BadRequest("URL манги не может быть пустым.");
-        }
-
         if (CheckUrlRequest(request.Url))
         {
-            return Results.BadRequest(
-                "Для получения манги нужна ссылка на страницу манги (содержит /manga/).");
+            throw new InvalidMangaUrlException();
         }
 
-        try
-        {
-            var result = await parser.ParseMangaAsync(request.Url, request.Options);
-            var dynamicResponse = MangaResponseMapper.ToDynamicResponse(result, request.Options);
+        var result = await parser.ParseMangaAsync(request.Url, request.Options);
+        var dynamicResponse = MangaResponseMapper.ToDynamicResponse(result, request.Options);
 
-            return Results.Ok(dynamicResponse);
-        }
-        catch (Exception e)
-        {
-            return Results.Problem($"Ошибка при парсинге: {e.Message}");
-        }
+        return Results.Ok(dynamicResponse);
     }
 
     private static async Task<IResult> DownloadMarkdownHandler([FromBody] ParseMangaRequest request,
@@ -50,8 +38,7 @@ public static class MangaEndpoints
     {
         if (CheckUrlRequest(request.Url))
         {
-            return Results.BadRequest(
-                "Для получения манги нужна ссылка на страницу манги (содержит /manga/).");
+            throw new InvalidMangaUrlException();
         }
 
         var manga = await parserService.ParseMangaAsync(request.Url, request.Options);
@@ -72,9 +59,14 @@ public static class MangaEndpoints
         );
     }
 
-    private static bool CheckUrlRequest(string Url)
+    private static bool CheckUrlRequest(string url)
     {
-        if (!Url.Contains("/manga/"))
+        if (string.IsNullOrEmpty(url))
+        {
+            return true;
+        }
+
+        if (!url.Contains("/manga/"))
         {
             return true;
         }

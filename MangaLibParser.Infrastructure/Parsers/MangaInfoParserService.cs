@@ -2,7 +2,6 @@
 using MangaLibParser.Application.Options;
 using MangaLibParser.Domain.Entities;
 using Serilog;
-using Serilog.Events;
 using SerilogTracing;
 
 namespace MangaLibParser.Infrastructure.Parsers;
@@ -39,11 +38,6 @@ public class MangaInfoParserService : IMangaInfoParserService
 
             activity.Complete();
             return manga;
-        }
-        catch (Exception e)
-        {
-            activity.Complete(LogEventLevel.Error, e);
-            return null;
         }
         finally
         {
