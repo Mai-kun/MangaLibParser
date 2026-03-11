@@ -1,0 +1,282 @@
+﻿<!DOCTYPE html>
+<html data-bs-theme="dark" lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>MangaLib Parser GUI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 2rem;
+            background-color: #121212;
+        }
+
+        #resultArea {
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+        }
+
+        .form-check-label {
+            font-size: 0.9rem;
+        }
+
+        .card {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2 class="mb-4 text-center">📚 MangaLib Parser GUI</h2>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="mb-4">
+                <label class="form-label text-info fw-bold">Ссылка на мангу (для парсинга) или на профиль (для
+                    скачивания библиотеки):</label>
+                <input class="form-control form-control-lg" id="urlInput" placeholder="https://mangalib.me/ru/..."
+                       type="text">
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <label class="form-label fw-bold mb-0">Настройки парсинга (MangaParsingOptions):</label>
+                <button class="btn btn-sm btn-outline-secondary" id="btnToggleCheckboxes">Снять/Поставить все галочки
+                </button>
+            </div>
+
+            <!-- Сетка чекбоксов в 3 колонки -->
+            <div class="row mb-4 bg-dark rounded p-3">
+                <!-- Колонка 1: Основная информация -->
+                <div class="col-md-4">
+                    <div class="form-check">
+                        <input checked class="form-check-input option-cb" id="ParseUrl" type="checkbox">
+                        <label class="form-check-label" for="ParseUrl">URL адрес</label>
+                    </div>
+                    <div class="form-check">
+                        <input checked class="form-check-input option-cb" id="ParseTitleTranslated" type="checkbox">
+                        <label class="form-check-label" for="ParseTitleTranslated">Название (Перевод)</label>
+                    </div>
+                    <div class="form-check">
+                        <input checked class="form-check-input option-cb" id="ParseTitleOriginal" type="checkbox">
+                        <label class="form-check-label" for="ParseTitleOriginal">Название (Оригинал)</label>
+                    </div>
+                    <div class="form-check">
+                        <input checked class="form-check-input option-cb" id="ParseDescription" type="checkbox">
+                        <label class="form-check-label" for="ParseDescription">Описание</label>
+                    </div>
+                    <div class="form-check">
+                        <input checked class="form-check-input option-cb" id="ParseCover" type="checkbox">
+                        <label class="form-check-label" for="ParseCover">Обложка (ссылка)</label>
+                    </div>
+                    <div class="form-check">
+                        <input checked class="form-check-input option-cb" id="ParseAgeRating" type="checkbox">
+                        <label class="form-check-label" for="ParseAgeRating">Возрастной рейтинг</label>
+                    </div>
+                </div>
+
+                <!-- Колонка 2: Детали и статусы -->
+                <div class="col-md-4">
+                    <div class="form-check">
+                        <input checked class="form-check-input option-cb" id="ParseReleaseYear" type="checkbox">
+                        <label class="form-check-label" for="ParseReleaseYear">Год выпуска</label>
+                    </div>
+                    <div class="form-check">
+                        <input checked class="form-check-input option-cb" id="ParseType" type="checkbox">
+                        <label class="form-check-label" for="ParseType">Тип (Манга/Манхва...)</label>
+                    </div>
+                    <div class="form-check">
+                        <input checked class="form-check-input option-cb" id="ParseReadingStatus" type="checkbox">
+                        <label class="form-check-label" for="ParseReadingStatus">Статус чтения</label>
+                    </div>
+                    <div class="form-check">
+                        <input checked class="form-check-input option-cb" id="ParseReleaseStatus" type="checkbox">
+                        <label class="form-check-label" for="ParseReleaseStatus">Статус выхода</label>
+                    </div>
+                    <div class="form-check">
+                        <input checked class="form-check-input option-cb" id="ParseTranslationStatus" type="checkbox">
+                        <label class="form-check-label" for="ParseTranslationStatus">Статус перевода</label>
+                    </div>
+                    <div class="form-check">
+                        <input checked class="form-check-input option-cb" id="ParseGeneralRating" type="checkbox">
+                        <label class="form-check-label" for="ParseGeneralRating">Общий рейтинг</label>
+                    </div>
+                    <div class="form-check">
+                        <input checked class="form-check-input option-cb" id="ParseUserRating" type="checkbox">
+                        <label class="form-check-label" for="ParseUserRating">Оценка пользователя</label>
+                    </div>
+                </div>
+
+                <!-- Колонка 3: Списки и метаданные -->
+                <div class="col-md-4">
+                    <div class="form-check">
+                        <input checked class="form-check-input option-cb" id="ParseChaptersAmount" type="checkbox">
+                        <label class="form-check-label" for="ParseChaptersAmount">Количество глав</label>
+                    </div>
+                    <div class="form-check">
+                        <input checked class="form-check-input option-cb" id="ParseGenres" type="checkbox">
+                        <label class="form-check-label" for="ParseGenres">Жанры</label>
+                    </div>
+                    <div class="form-check">
+                        <input checked class="form-check-input option-cb" id="ParseTags" type="checkbox">
+                        <label class="form-check-label" for="ParseTags">Теги</label>
+                    </div>
+                    <div class="form-check">
+                        <input checked class="form-check-input option-cb" id="ParseAuthors" type="checkbox">
+                        <label class="form-check-label" for="ParseAuthors">Авторы</label>
+                    </div>
+                    <div class="form-check">
+                        <input checked class="form-check-input option-cb" id="ParsePublishers" type="checkbox">
+                        <label class="form-check-label" for="ParsePublishers">Издатели</label>
+                    </div>
+                    <div class="form-check">
+                        <input checked class="form-check-input option-cb" id="ParseTranslators" type="checkbox">
+                        <label class="form-check-label" for="ParseTranslators">Переводчики</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Кнопки действий -->
+            <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-primary" id="btnParseJson">📄 Спарсить мангу (JSON)</button>
+                <button class="btn btn-info text-dark fw-bold" id="btnParseMd">📝 Спарсить мангу (Markdown)</button>
+                <button class="btn btn-success" id="btnDownloadZip">📦 Скачать библиотеку (MD ➔ ZIP)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Зона вывода -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span class="fw-bold">Результат выполнения</span>
+            <span class="spinner-border spinner-border-sm d-none text-primary" id="loadingSpinner" role="status"></span>
+        </div>
+        <div class="card-body">
+            <pre class="mb-0 bg-dark text-light p-3 rounded border border-secondary"
+                 id="resultArea">Готов к работе...</pre>
+        </div>
+    </div>
+</div>
+
+<!-- Логика JS -->
+<script>
+    const resultArea = document.getElementById('resultArea');
+    const spinner = document.getElementById('loadingSpinner');
+
+    // Логика кнопки "Снять/Выбрать все"
+    document.getElementById('btnToggleCheckboxes').addEventListener('click', (e) => {
+        const checkboxes = document.querySelectorAll('.option-cb');
+        // Проверяем, все ли сейчас сняты
+        const areAllUnchecked = Array.from(checkboxes).every(cb => !cb.checked);
+
+        // Если все сняты - ставим все. Иначе - снимаем все.
+        checkboxes.forEach(cb => cb.checked = areAllUnchecked);
+    });
+
+    // Собираем объект MangaParsingOptions из чекбоксов
+    function getOptions() {
+        const options = {};
+        document.querySelectorAll('.option-cb').forEach(cb => {
+            // Переводим первую букву ID в нижний регистр, чтобы совпало с JSON форматом бэкенда (camelCase)
+            const propName = cb.id.charAt(0).toLowerCase() + cb.id.slice(1);
+            options[propName] = cb.checked;
+        });
+        return options;
+    }
+
+    // Универсальная функция для скачивания файлов (MD или ZIP)
+    async function downloadFile(endpoint, defaultFilename) {
+        const url = document.getElementById('urlInput').value;
+        if (!url) return alert('Пожалуйста, введите URL!');
+
+        spinner.classList.remove('d-none');
+        resultArea.textContent = 'Обработка запроса...\nЭто может занять некоторое время. Откройте Seq для просмотра процесса в реальном времени.';
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({url: url, options: getOptions()})
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Ошибка сервера: ${response.status}\n${errorText}`);
+            }
+
+            let filename = defaultFilename;
+            const disposition = response.headers.get('Content-Disposition');
+
+            // Пытаемся достать правильное имя файла из заголовков (включая русские буквы)
+            if (disposition) {
+                // 1. Ищем кодировку UTF-8 (для русских названий типа %D0%9C...)
+                const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+                if (utf8Match && utf8Match[1]) {
+                    filename = decodeURIComponent(utf8Match[1]);
+                } else {
+                    // 2. Фолбэк для простых английских названий
+                    const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+                    if (matches != null && matches[1]) {
+                        filename = matches[1].replace(/['"]/g, '');
+                    }
+                }
+            }
+
+            // Скачиваем файл в память браузера и инициируем сохранение
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(downloadUrl);
+
+            resultArea.textContent = `✅ Файл успешно скачан как:\n"${filename}"`;
+        } catch (error) {
+            resultArea.textContent = '❌ Ошибка:\n' + error.message;
+        } finally {
+            spinner.classList.add('d-none');
+        }
+    }
+
+    // 1. Кнопка: Спарсить JSON (Вывод текста на экран)
+    document.getElementById('btnParseJson').addEventListener('click', async () => {
+        const url = document.getElementById('urlInput').value;
+        if (!url) return alert('Введите URL манги!');
+
+        spinner.classList.remove('d-none');
+        resultArea.textContent = 'Парсинг JSON запущен...';
+
+        try {
+            const response = await fetch('/api/manga/parse', { // Ваш эндпоинт для JSON
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({url: url, options: getOptions()})
+            });
+
+            if (!response.ok) throw new Error(await response.text());
+            const data = await response.json();
+            resultArea.textContent = JSON.stringify(data, null, 2);
+        } catch (error) {
+            resultArea.textContent = '❌ Ошибка: ' + error.message;
+        } finally {
+            spinner.classList.add('d-none');
+        }
+    });
+
+    // 2. Кнопка: Спарсить Markdown (Скачивание файла .md)
+    document.getElementById('btnParseMd').addEventListener('click', () => {
+        // Убедитесь, что у вас есть этот эндпоинт в MangaEndpoints.cs!
+        downloadFile('/api/manga/download/md', 'manga.md');
+    });
+
+    // 3. Кнопка: Скачать библиотеку в ZIP
+    document.getElementById('btnDownloadZip').addEventListener('click', () => {
+        // Эндпоинт из UserEndpoints.cs
+        downloadFile('/api/users/parse-library/download', 'manga_library.zip');
+    });
+</script>
+</body>
+</html>

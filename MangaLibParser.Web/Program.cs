@@ -40,7 +40,11 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.MapMangaEndpoints();
 app.MapUserEndpoints();
+
 app.UseHttpsRedirection();
 app.Run();

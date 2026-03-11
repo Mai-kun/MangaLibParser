@@ -43,6 +43,12 @@ public static class UserEndpoints
             return Results.BadRequest("URL профиля не может быть пустым");
         }
 
+        if (!request.Url.Contains("/user/"))
+        {
+            return Results.BadRequest(
+                "Для скачивания библиотеки нужна ссылка на профиль пользователя (содержит /user/).");
+        }
+
         try
         {
             var zipFile = await syncService.ExportLibraryToZipAsync(request.Url, request.Options);
