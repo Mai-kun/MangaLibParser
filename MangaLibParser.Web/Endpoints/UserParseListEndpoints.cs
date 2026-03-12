@@ -29,7 +29,7 @@ public static class UserEndpoints
             var library = await syncService.ParseLibraryAsync(request.Url, request.Options);
             return Results.Ok(library);
         }
-        catch (Exception e)
+        catch (Exception)
         {
             return Results.Problem("Ошибка при синхронизации библиотеки");
         }
@@ -59,7 +59,7 @@ public static class UserEndpoints
                 "library.zip"
             );
         }
-        catch (Exception e)
+        catch (Exception)
         {
             return Results.Problem("Ошибка при создании архива библиотеки");
         }

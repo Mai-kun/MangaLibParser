@@ -11,7 +11,7 @@ public class UserListParserService : IUserListParserService
 {
     private readonly PlaywrightBrowserManager _browserManager;
     private readonly ILogger _logger;
-    private IPage _page;
+    private IPage _page = null!;
 
     public UserListParserService(PlaywrightBrowserManager browserManager, ILogger logger)
     {
